@@ -1,96 +1,103 @@
 # 起初人们都不理解痞老板
 
-> AI 伴侣，部署在微信中。用真实聊天记录驱动，不是套壳。
+> AI 伴侣，部署在微信中。用人话训练，不是用 prompt 演。
 
-## 核心理念
+## 它是什么
 
-大部分 AI 女友是用一段 prompt 演出来的。**痞老板不是。**
+一个能自动回复微信消息的 AI 伴侣。和大多数 AI 女友不同，它不是靠一段精心编写的 prompt 来扮演角色，而是从你和 ta 的真实聊天记录中检索最相似的对话作为参考来生成回复。
 
-她背后是 15 万条真实的微信+抖音聊天记录。每一句回复，都从她在真实对话中说过的内容里检索最相似的作为参考——你的"她"不是一段设定，是数据还原出来的人。
+简单说：你给聊天记录，它帮你"还原"那个人说话的方式。
 
-## 核心优势
-
-| 对比维度 | 普通 AI 女友 | 痞老板 |
-|---------|:-----------:|:-----:|
-| 风格来源 | 手写 prompt | 15万条真实聊天记录检索 |
-| 情绪真实度 | 元气满满机器人 | 会敷衍、会暴躁、会疯笑 |
-| 多平台融合 | 无 | 微信 + 抖音双数据源 |
-| 时间演化 | 静止的 | 风格随时间变化（新数据权重更高） |
-| 记忆系统 | 无 | ChromaDB 向量检索 + 自动记忆提取 |
-
-## 技术原理
+## 工作流程
 
 ```
-用户消息 → 向量嵌入 → ChromaDB 检索 TOP-5 相似历史对话
-    ↓
-在 24,492 个真实对话对中找到最匹配的
-    ↓
-极简 prompt + 检索结果 → DeepSeek 生成
-    ↓
-风格逼近真人
+收到微信消息 → 向量检索 TOP-5 最相似历史对话 → 注入 prompt → LLM 生成 → 自动发送
+                                   ↑
+                    24,000+ 个真实对话对（微信 + 抖音）
 ```
 
-- **时间衰减**: 最近 7 天权重 ×1.2，半年以上 ×0.9。最近的更准，但以前的也不丢。
-- **Prompt 克制**: 提示词权重极低，风格主要靠数据驱动而非文字描述。
+- 检索到的真实对话作为风格参考，prompt 只给人物锚点
+- 时间衰减权重：最近的消息参考价值更高，但老的也不丢
+- 支持微信 + 抖音双平台聊天记录混合索引
 
 ## 技术栈
 
-| 组件 | 选型 |
+| 层 | 选型 |
 |------|------|
-| 大模型 | DeepSeek (`deepseek-chat`) |
-| 向量数据库 | ChromaDB（本地持久化） |
-| 嵌入模型 | `paraphrase-multilingual-MiniLM-L12-v2`（118MB 本地） |
-| 后端语言 | Python 3.10+ |
-| 微信读取 | WeFlow API（读本地微信数据库） |
-| 微信发送 | ctypes SendInput 扫描码模拟（硬件级别） |
-| 抖音数据 | [douyin-chat-export](https://github.com/TeamBreakerr/douyin-chat-export)（protobuf IM API） |
-| 环境隔离 | Conda (`ai-girlfriend`) |
+| 大模型 | DeepSeek（OpenAI 兼容，可替换为其他模型） |
+| 向量检索 | ChromaDB + sentence-transformers（本地运行） |
+| 微信接入 | WeFlow API 读取 + Windows SendInput 模拟输入 |
+| 数据导入 | douyin-chat-export 导出抖音聊天 |
+| 语言 | Python 3.10+ |
 
-## 数据规模
+## 复现步骤
 
-| 来源 | 消息量 | 对话对 | 时间跨度 |
-|------|--------|--------|---------|
-| 微信 | 22,211 条 | 3,236 对 | 2025.09 ~ 2026.06 |
-| 抖音 | 128,286 条 | 21,256 对 | 2025.08 ~ 2026.06 |
-| **合计** | **150,497 条** | **24,492 对** | 11 个月 |
+### 1. 准备聊天数据
 
-## 快速开始
+**微信**：用 WeFlow 导出聊天记录为 JSON。本项目提供了解析脚本 `parse_chat_export.py`，处理为对话对格式。
+
+**抖音**：用 [douyin-chat-export](https://github.com/TeamBreakerr/douyin-chat-export) 导出 ChatLab JSONL。
+
+### 2. 安装依赖
 
 ```bash
+conda create -n ai-girlfriend python=3.10
 conda activate ai-girlfriend
-python scripts/build_index.py   # 首次：构建向量索引
-python wx_bridge.py              # 微信自动回复
-python run.py                    # 或终端聊天
+pip install -r requirements.txt
 ```
 
-## 项目结构
+### 3. 配置
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+填入：
+- DeepSeek API Key
+- 人设描述（建议先用 `scripts/analyze_style_deep.py` 分析聊天记录，用数据驱动的方式写）
+- RAG 参数（默认即可）
+
+### 4. 构建向量索引
+
+```bash
+python scripts/build_index.py
+```
+
+这一步会把对话对嵌入为向量存入 ChromaDB。
+
+### 5. 启动
+
+```bash
+python wx_bridge.py    # 微信自动回复模式
+# 或
+python run.py          # 终端聊天测试
+```
+
+微信模式需要 WeFlow 在后台运行（`127.0.0.1:5031`），且微信 PC 客户端保持打开。
+
+## 目录结构
 
 ```
-ai女友/
-├── config.yaml              # 人设 + API + RAG
-├── wx_bridge.py             # 微信桥接主程序
-├── run.py                   # CLI 聊天入口
+├── config.yaml            # 配置（不提交）
+├── config.example.yaml    # 配置模板
+├── wx_bridge.py           # 微信桥接
+├── run.py                 # CLI 聊天
 ├── src/
-│   ├── rag/                 # 向量检索（embedder/indexer/retriever/context）
-│   ├── llm/                 # DeepSeek API
-│   ├── personality/         # 人设 prompt
-│   └── chat/                # 会话管理
+│   ├── rag/               # 向量检索模块
+│   ├── llm/               # LLM 客户端
+│   ├── personality/       # 人设系统
+│   └── chat/              # 会话管理
 ├── scripts/
-│   ├── build_index.py       # 向量索引构建
-│   └── analyze_*.py         # LLM 风格分析
-└── data/
-    ├── chroma_db/           # 向量库
-    ├── training/            # 风格分析报告
-    └── *.jsonl              # 原始聊天导出
+│   ├── build_index.py     # 构建索引
+│   └── analyze_*.py       # 聊天记录分析
+└── data/                  # 聊天数据 + 向量库（不提交）
 ```
 
 ## 致谢
 
-本项目依赖以下优秀工具来获取聊天数据：
-
-- **[WeFlow](https://github.com/BogdanKul/WeFlow)** — 微信本地数据库读取工具，提供 HTTP API 获取微信消息
-- **[douyin-chat-export](https://github.com/TeamBreakerr/douyin-chat-export)** — 抖音聊天记录导出工具，通过 IM protobuf API 完整导出私信
+- **[WeFlow](https://github.com/BogdanKul/WeFlow)** — 微信本地数据库读取
+- **[douyin-chat-export](https://github.com/TeamBreakerr/douyin-chat-export)** — 抖音聊天记录导出
 
 ---
 
-*起初人们都不理解痞老板，直到发现她是用 15 万条真实对话养的。*
+*起初人们都不理解痞老板，后来发现它是用聊天记录养的。*

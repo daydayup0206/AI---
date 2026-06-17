@@ -1,0 +1,14 @@
+{
+  "personal_info": [
+    {"fact": "示例：在重庆上班，做数据处理工作", "source": "manual", "added": "2025-01-01"}
+  ],
+  "relationship_milestones": [
+    {"fact": "示例：2025-01-01：第一次见面", "source": "manual", "added": "2025-01-01"}
+  ],
+  "inside_jokes": [
+    {"fact": "示例：去云南捡垃圾（你们的梗）", "source": "manual", "added": "2025-01-01"}
+  ],
+  "preferences": [
+    {"fact": "示例：喜欢火锅和蛙蛙", "source": "manual", "added": "2025-01-01"}
+  ]
+}

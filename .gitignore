@@ -1,0 +1,44 @@
+# 配置文件（含 API key）
+config.yaml
+
+# 环境变量
+.env
+
+# 聊天数据（个人隐私）
+data/*.json
+data/*.jsonl
+data/*.txt
+data/chroma_db/
+data/training/
+!data/memories.example.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 临时测试文件
+test_*.py
+dry_run_*.txt
+
+# 外部项目
+douyin-chat-export/
+WeFlow-latest-from-hicccc77/
+
+# 敏感/本地文件
+wechat_db_key.txt
+wechat_info.txt
+.claude/
+
+# 系统文件
+.DS_Store
+Thumbs.db

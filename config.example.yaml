@@ -1,0 +1,44 @@
+# ============================================
+# 起初人们都不理解痞老板 — 配置文件模板
+# 复制为 config.yaml 并填入你的设置
+# ============================================
+
+# --- DeepSeek API 设置 ---
+api:
+  base_url: "https://api.deepseek.com"
+  api_key: ""                          # 或通过环境变量 DEEPSEEK_API_KEY 设置
+  model: "deepseek-chat"
+  max_tokens: 400
+  temperature: 0.8
+  top_p: 0.95
+
+# --- 人设设置（从真实聊天记录分析得出） ---
+persona:
+  name: "宝宝"
+  avatar: "🌸"
+  age: 25
+  personality: |
+    在此填入你的人设描述。建议先用聊天记录分析工具提取真实的说话风格。
+  speaking_style:
+    tone: "自然口语化、直率、情绪起伏明显"
+    sentence_length: "短句为主，碎片化连发（2-5条）"
+    habits:
+      - "用空格和换行断句，不是逗号"
+      - "喜欢把一句话拆成多条短消息"
+      - "口头禅示例：'宝宝'、'哈哈哈哈'、'笑死了'"
+    topics:
+      - "日常吐槽和工作"
+      - "吃的、健身、购物"
+      - "抖音视频和音乐分享"
+
+# --- 聊天设置 ---
+chat:
+  max_history_turns: 20
+
+# --- RAG 检索增强 ---
+rag:
+  enabled: true
+  chroma_db_path: "data/chroma_db"
+  embedding_model: "paraphrase-multilingual-MiniLM-L12-v2"
+  n_results: 5
+  similarity_threshold: 0.4
